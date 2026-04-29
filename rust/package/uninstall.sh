@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Unique identifier, ideally a reverse-domain identifier.
-identifier=codes.merritt.vscode_runner
+identifier=sirchnik.vscode_runner
 
 # Name of this runner.
 name=vscode_runner

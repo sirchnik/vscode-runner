@@ -4,7 +4,7 @@
 set -e
 
 # Unique identifier, ideally a reverse-domain identifier.
-identifier=codes.merritt.vscode_runner
+identifier=sirchnik.vscode_runner
 
 # Name of this runner.
 name=vscode_runner
@@ -38,4 +38,4 @@ cat $serviceFileName | sed "s|Exec=|Exec=$executableFullPath|" - > "$dataHome"/d
 cp $desktopFileName "$dataHome"/krunner/dbusplugins/$desktopFileName
 
 # Close KRunner, it will start again when the hotkey is invoked.
-kquitapp5 krunner
+kquitapp6 krunner
