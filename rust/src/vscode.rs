@@ -70,3 +70,56 @@ impl VSCode {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_executable_names() {
+        assert_eq!(VSCodeVersion::Stable.executable(), "code");
+        assert_eq!(VSCodeVersion::Insiders.executable(), "code-insiders");
+        assert_eq!(VSCodeVersion::Codium.executable(), "codium");
+    }
+
+    #[test]
+    fn test_icon_names() {
+        assert_eq!(VSCodeVersion::Stable.icon_name(), "vscode");
+        assert_eq!(VSCodeVersion::Insiders.icon_name(), "vscode-insiders");
+        assert_eq!(VSCodeVersion::Codium.icon_name(), "vscodium");
+    }
+
+    #[test]
+    fn test_id_prefix() {
+        assert_eq!(VSCodeVersion::Stable.id_prefix(), "stable");
+        assert_eq!(VSCodeVersion::Insiders.id_prefix(), "insiders");
+        assert_eq!(VSCodeVersion::Codium.id_prefix(), "codium");
+    }
+
+    #[test]
+    fn test_from_id_prefix_valid() {
+        assert_eq!(VSCodeVersion::from_id_prefix("stable"), Some(VSCodeVersion::Stable));
+        assert_eq!(VSCodeVersion::from_id_prefix("insiders"), Some(VSCodeVersion::Insiders));
+        assert_eq!(VSCodeVersion::from_id_prefix("codium"), Some(VSCodeVersion::Codium));
+    }
+
+    #[test]
+    fn test_from_id_prefix_invalid() {
+        assert_eq!(VSCodeVersion::from_id_prefix("unknown"), None);
+        assert_eq!(VSCodeVersion::from_id_prefix(""), None);
+    }
+
+    #[test]
+    fn test_db_path_contains_expected_subpath() {
+        // db_path depends on the system config dir, but we can verify the suffix
+        if let Some(path) = VSCodeVersion::Stable.db_path() {
+            assert!(path.ends_with("Code/User/globalStorage/state.vscdb"));
+        }
+        if let Some(path) = VSCodeVersion::Insiders.db_path() {
+            assert!(path.ends_with("Code - Insiders/User/globalStorage/state.vscdb"));
+        }
+        if let Some(path) = VSCodeVersion::Codium.db_path() {
+            assert!(path.ends_with("VSCodium/User/globalStorage/state.vscdb"));
+        }
+    }
+}

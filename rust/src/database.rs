@@ -58,3 +58,65 @@ fn parse_recent_paths(json_str: &str) -> Vec<String> {
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_recent_paths_with_entries() {
+        let json = r#"{
+            "entries": [
+                {"folderUri": "file:///home/user/project1"},
+                {"folderUri": "file:///home/user/project2"}
+            ]
+        }"#;
+        let result = parse_recent_paths(json);
+        assert_eq!(result, vec![
+            "file:///home/user/project1",
+            "file:///home/user/project2",
+        ]);
+    }
+
+    #[test]
+    fn test_parse_recent_paths_empty_entries() {
+        let json = r#"{"entries": []}"#;
+        let result = parse_recent_paths(json);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_parse_recent_paths_no_entries_key() {
+        let json = r#"{"other": "value"}"#;
+        let result = parse_recent_paths(json);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_parse_recent_paths_invalid_json() {
+        let result = parse_recent_paths("not valid json");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_parse_recent_paths_skips_entries_without_folder_uri() {
+        let json = r#"{
+            "entries": [
+                {"folderUri": "file:///home/user/project1"},
+                {"workspace": {"configPath": "/some/path"}},
+                {"folderUri": "file:///home/user/project3"}
+            ]
+        }"#;
+        let result = parse_recent_paths(json);
+        assert_eq!(result, vec![
+            "file:///home/user/project1",
+            "file:///home/user/project3",
+        ]);
+    }
+
+    #[test]
+    fn test_get_recent_workspace_paths_nonexistent_db() {
+        let result = get_recent_workspace_paths("/nonexistent/path/state.vscdb");
+        assert!(result.is_empty());
+    }
+}

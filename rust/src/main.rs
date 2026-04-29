@@ -271,3 +271,55 @@ fn open_containing_folder(path: &str) {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_path_to_uri_strips_file_scheme() {
+        assert_eq!(path_to_uri("file:///home/user/project"), "/home/user/project");
+    }
+
+    #[test]
+    fn test_path_to_uri_strips_vscode_remote_scheme() {
+        assert_eq!(
+            path_to_uri("vscode-remote:///home/user/project"),
+            "/home/user/project"
+        );
+    }
+
+    #[test]
+    fn test_path_to_uri_plain_path_unchanged() {
+        assert_eq!(path_to_uri("/home/user/project"), "/home/user/project");
+    }
+
+    #[test]
+    fn test_parse_relative_path_with_home_dir() {
+        let result = parse_relative_path("/home/user/projects/foo", "/home/user");
+        assert_eq!(result, Some("~/projects/foo".to_owned()));
+    }
+
+    #[test]
+    fn test_parse_relative_path_without_home_dir() {
+        let result = parse_relative_path("/opt/projects/foo", "/home/user");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_parse_relative_path_empty_home_dir() {
+        let result = parse_relative_path("/home/user/projects/foo", "");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_executable_exists_with_known_binary() {
+        // `ls` should exist on any Linux system
+        assert!(executable_exists("ls"));
+    }
+
+    #[test]
+    fn test_executable_exists_with_unknown_binary() {
+        assert!(!executable_exists("definitely_not_a_real_binary_xyz"));
+    }
+}
+
