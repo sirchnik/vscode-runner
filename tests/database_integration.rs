@@ -26,25 +26,41 @@ fn reads_recent_workspace_paths_from_vscdb() {
     let (_dir, db_path) = create_test_db();
     let paths = get_recent_workspace_paths(&db_path);
 
-    assert_eq!(paths.len(), 4);
+    assert_eq!(paths.len(), 5);
     assert_eq!(paths[0], "file:///home/user/Projects/alpha");
     assert_eq!(paths[1], "file:///home/user/Projects/beta");
     assert_eq!(paths[2], "file:///home/user/Projects/gamma");
+    assert_eq!(paths[3], "/some/workspace.code-workspace");
     assert_eq!(
-        paths[3],
+        paths[4],
         "vscode-remote://ssh-remote%2Bmyserver/home/user/remote-project"
     );
 }
 
 #[test]
-fn skips_entries_without_folder_uri() {
-    let (_dir, db_path) = create_test_db();
-    let paths = get_recent_workspace_paths(&db_path);
+fn skips_entries_without_folder_uri_or_workspace() {
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("state.vscdb");
 
-    // The test database has 5 entries total but one is a workspace entry
-    // without folderUri — it should be skipped.
-    assert_eq!(paths.len(), 4);
-    assert!(!paths.iter().any(|p| p.contains("workspace")));
+    let json = r#"{"entries":[{"folderUri":"file:///home/user/project1"},{"other":"value"},{"folderUri":"file:///home/user/project2"}]}"#;
+
+    let conn = rusqlite::Connection::open(&db_path).unwrap();
+    conn.execute_batch(
+        "CREATE TABLE ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);",
+    )
+    .unwrap();
+    conn.execute(
+        "INSERT INTO ItemTable (key, value) VALUES (?1, ?2)",
+        rusqlite::params!["history.recentlyOpenedPathsList", json],
+    )
+    .unwrap();
+
+    let paths = get_recent_workspace_paths(&db_path.to_string_lossy());
+
+    // Entry with only "other" key should be skipped
+    assert_eq!(paths.len(), 2);
+    assert_eq!(paths[0], "file:///home/user/project1");
+    assert_eq!(paths[1], "file:///home/user/project2");
 }
 
 #[test]

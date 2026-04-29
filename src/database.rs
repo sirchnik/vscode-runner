@@ -51,10 +51,17 @@ fn parse_recent_paths(json_str: &str) -> Vec<String> {
     entries
         .iter()
         .filter_map(|entry| {
-            entry
-                .get("folderUri")
+            if let Some(uri) = entry.get("folderUri").and_then(|v| v.as_str()) {
+                Some(uri.to_owned())
+            } else if let Some(config_path) = entry
+                .get("workspace")
+                .and_then(|w| w.get("configPath"))
                 .and_then(|v| v.as_str())
-                .map(|s| s.to_owned())
+            {
+                Some(config_path.to_owned())
+            } else {
+                None
+            }
         })
         .collect()
 }
@@ -99,17 +106,34 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_recent_paths_skips_entries_without_folder_uri() {
+    fn test_parse_recent_paths_skips_entries_without_folder_uri_or_workspace() {
         let json = r#"{
             "entries": [
                 {"folderUri": "file:///home/user/project1"},
-                {"workspace": {"configPath": "/some/path"}},
+                {"other": "value"},
                 {"folderUri": "file:///home/user/project3"}
             ]
         }"#;
         let result = parse_recent_paths(json);
         assert_eq!(result, vec![
             "file:///home/user/project1",
+            "file:///home/user/project3",
+        ]);
+    }
+
+    #[test]
+    fn test_parse_recent_paths_includes_workspace_config_path() {
+        let json = r#"{
+            "entries": [
+                {"folderUri": "file:///home/user/project1"},
+                {"workspace": {"id": "abc123", "configPath": "file:///home/user/my-project/my-project.code-workspace"}},
+                {"folderUri": "file:///home/user/project3"}
+            ]
+        }"#;
+        let result = parse_recent_paths(json);
+        assert_eq!(result, vec![
+            "file:///home/user/project1",
+            "file:///home/user/my-project/my-project.code-workspace",
             "file:///home/user/project3",
         ]);
     }

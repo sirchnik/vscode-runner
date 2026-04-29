@@ -245,9 +245,13 @@ fn open_workspace(uri: &str, version: VSCodeVersion) {
     let executable = version.executable();
     info!("Opening workspace at {uri} with {executable}");
 
-    let result = Command::new(executable)
-        .arg(format!("--folder-uri={uri}"))
-        .spawn();
+    let arg = if uri.ends_with(".code-workspace") {
+        format!("--file-uri={uri}")
+    } else {
+        format!("--folder-uri={uri}")
+    };
+
+    let result = Command::new(executable).arg(arg).spawn();
 
     match result {
         Ok(_) => info!("Successfully opened workspace"),
