@@ -3,6 +3,10 @@ use std::process::Command;
 use krunner::{Match, MatchIcon, MatchType, RunnerExt};
 use log::{error, info};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use nucleo_matcher::{
+    pattern::{AtomKind, CaseMatching, Normalization, Pattern},
+    Config, Matcher,
+};
 
 mod database;
 mod notifications;
@@ -131,25 +135,23 @@ impl VscodeRunner {
             None => return vec![],
         };
 
-        let regex = match regex::RegexBuilder::new(query)
-            .case_insensitive(true)
-            .build()
-        {
-            Ok(r) => r,
-            Err(_) => return vec![],
-        };
-
         let recent_paths = instance.recent_workspace_paths();
-        let matching: Vec<&str> = recent_paths
-            .iter()
-            .map(|s| s.as_str())
-            .filter(|path| regex.is_match(path))
+        let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
+        let pattern =
+            Pattern::new(query, CaseMatching::Ignore, Normalization::Smart, AtomKind::Fuzzy);
+
+        let matching: Vec<(&str, u32)> = pattern
+            .match_list(&recent_paths, &mut matcher)
+            .into_iter()
+            .map(|(s, score)| (s.as_str(), score))
             .collect();
 
         if matching.is_empty() {
             return vec![];
         }
 
+        // match_list already returns results sorted by score descending.
+        let max_score = matching[0].1 as f64;
         let icon_name = version.icon_name();
         let home_dir = dirs::home_dir()
             .map(|p| p.to_string_lossy().to_string())
@@ -157,12 +159,17 @@ impl VscodeRunner {
 
         matching
             .into_iter()
-            .map(|path| {
+            .map(|(path, score)| {
                 let uri = path_to_uri(path);
                 let project_name = path.rsplit('/').next().unwrap_or(path);
                 let subtitle = parse_relative_path(&uri, &home_dir).unwrap_or(uri);
                 let id_prefix = version.id_prefix();
                 let id = format!("{id_prefix}-{path}");
+                let relevance = if max_score > 0.0 {
+                    score as f64 / max_score
+                } else {
+                    1.0
+                };
 
                 Match {
                     id,
@@ -170,7 +177,7 @@ impl VscodeRunner {
                     icon: MatchIcon::ByName(icon_name.to_owned()),
                     subtitle: Some(subtitle),
                     ty: MatchType::ExactMatch,
-                    relevance: 1.0,
+                    relevance,
                     ..Match::default()
                 }
             })
@@ -320,6 +327,79 @@ mod tests {
     #[test]
     fn test_executable_exists_with_unknown_binary() {
         assert!(!executable_exists("definitely_not_a_real_binary_xyz"));
+    }
+
+    #[test]
+    fn test_fuzzy_match_finds_substring() {
+        let paths = ["/home/user/projects/my-app", "/home/user/projects/other"];
+        let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
+        let pattern =
+            Pattern::new("my-app", CaseMatching::Ignore, Normalization::Smart, AtomKind::Fuzzy);
+
+        let results = pattern.match_list(&paths, &mut matcher);
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(*results[0].0, "/home/user/projects/my-app");
+    }
+
+    #[test]
+    fn test_fuzzy_match_case_insensitive() {
+        let paths = ["/home/user/MyProject", "/home/user/other"];
+        let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
+        let pattern =
+            Pattern::new("myproject", CaseMatching::Ignore, Normalization::Smart, AtomKind::Fuzzy);
+
+        let results = pattern.match_list(&paths, &mut matcher);
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(*results[0].0, "/home/user/MyProject");
+    }
+
+    #[test]
+    fn test_fuzzy_match_partial_query() {
+        let paths = [
+            "/home/user/projects/vscode-runner",
+            "/home/user/projects/todo-app",
+            "/home/user/projects/web-server",
+        ];
+        let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
+        let pattern =
+            Pattern::new("vscrun", CaseMatching::Ignore, Normalization::Smart, AtomKind::Fuzzy);
+
+        let results = pattern.match_list(&paths, &mut matcher);
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(*results[0].0, "/home/user/projects/vscode-runner");
+    }
+
+    #[test]
+    fn test_fuzzy_match_no_results() {
+        let paths = ["/home/user/projects/my-app", "/home/user/projects/other"];
+        let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
+        let pattern =
+            Pattern::new("zzzzz", CaseMatching::Ignore, Normalization::Smart, AtomKind::Fuzzy);
+
+        let results = pattern.match_list(&paths, &mut matcher);
+
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_fuzzy_match_scores_are_ordered() {
+        let paths = [
+            "/home/user/projects/foo-bar-baz",
+            "/home/user/projects/foobar",
+            "/home/user/projects/unrelated",
+        ];
+        let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
+        let pattern =
+            Pattern::new("foobar", CaseMatching::Ignore, Normalization::Smart, AtomKind::Fuzzy);
+
+        let results = pattern.match_list(&paths, &mut matcher);
+
+        // match_list returns results sorted by score descending
+        assert!(!results.is_empty());
+        assert_eq!(*results[0].0, "/home/user/projects/foobar");
     }
 }
 
