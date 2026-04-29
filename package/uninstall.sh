@@ -1,37 +1,25 @@
 #!/bin/bash
 
 # Unique identifier, ideally a reverse-domain identifier.
-# Should match the $identifier.service file for this runner.
-identifier=codes.merritt.vscode_runner
+identifier=sirchnik.vscode_runner
 
-# Name of this runner, should match the plasma-runner-$name.desktop file.
+# Name of this runner.
 name=vscode_runner
 
 # Stop the runner process.
-kill "$(pidof $name)" &> /dev/null
+kill "$(pidof $name)" &> /dev/null || true
 
 # Ensure our working directory is the scripts directory.
 cd "$(dirname "$0")" || exit
 
 # Check for install location.
-if [[ -n "$XDG_DATA_HOME" ]]
-then
+if [[ -n "$XDG_DATA_HOME" ]]; then
     dataHome="$XDG_DATA_HOME"
 else
     dataHome=~/.local/share
 fi
 
 # Remove the executable & plugin files.
-rm ~/.local/bin/$name
-rm "$dataHome"/krunner/dbusplugins/plasma-runner-$name.desktop
-rm "$dataHome"/dbus-1/services/$identifier.service
-
-# Remove any old version that may be in the depreciated kservices5 directory.
-depreciatedDesktopFile="$dataHome"/kservices5/krunner/dbusplugins/plasma-runner-$name.desktop
-if [[ -f "$depreciatedDesktopFile" ]]
-then
-    rm "$depreciatedDesktopFile"
-fi
-
-# Close KRunner, it will start again when the hotkey is invoked.
-kquitapp5 krunner
+rm -f ~/.local/bin/$name
+rm -f "$dataHome"/krunner/dbusplugins/plasma-runner-$name.desktop
+rm -f "$dataHome"/dbus-1/services/$identifier.service

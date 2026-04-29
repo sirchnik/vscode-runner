@@ -1,49 +1,41 @@
 name: Build
-on:
-  # Enable manual run
-  workflow_dispatch:
-  # Allow being called by other workflows
-  workflow_call:
-    inputs:
-      pre-release:
-        description: "Whether the build is for a pre-release"
-        required: false
-        default: false
-        type: boolean
 
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
 
-    # ----------------------------------- Setup ------------------------------ #
-
     steps:
       - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
 
-      - name: Setup Linux build requirements
-        run: |
-          sudo apt-get update
-          sudo apt-get install libsqlite3-dev
-
-      # ----------------------------------- Build ---------------------------- #
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Build
+        run: cargo build --release
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Package
         run: |
-          dart pub get
-          dart compile exe -o package/vscode_runner bin/vscode_runner.dart
+          COMMIT=$(git rev-parse --short HEAD)
+          ./package.sh
+          mv build/vscode_runner.tar.gz build/vscode_runner-${COMMIT}.tar.gz
 
-      # ---------------------------------- Upload ---------------------------- #
-
-      - name: Create artifacts
-        run: |
-          mkdir -p output
-          # Compress the contents of the package directory
-          (cd package/ && tar -zcvf ../output/vscode_runner.tar.gz .)
-
-      - name: Upload artifacts to workflow
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          path: output/vscode_runner.tar.gz
+          name: vscode_runner
+          path: build/vscode_runner-*.tar.gz
