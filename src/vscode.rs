@@ -40,11 +40,11 @@ impl VSCodeVersion {
     }
 
     pub fn db_path(&self) -> Option<String> {
-        let config_dir = dirs::config_dir()?;
+        let config_dir = dirs::home_dir()?;
         let subpath = match self {
-            Self::Stable => "Code/User/globalStorage/state.vscdb",
-            Self::Insiders => "Code - Insiders/User/globalStorage/state.vscdb",
-            Self::Codium => "VSCodium/User/globalStorage/state.vscdb",
+            Self::Stable => ".vscode-shared/sharedStorage/state.vscdb",
+            Self::Insiders => ".vscode-insiders-shared/sharedStorage/state.vscdb",
+            Self::Codium => ".vscodium-shared/sharedStorage/state.vscdb",
         };
         Some(config_dir.join(subpath).to_string_lossy().to_string())
     }
@@ -125,13 +125,13 @@ mod tests {
     fn test_db_path_contains_expected_subpath() {
         // db_path depends on the system config dir, but we can verify the suffix
         if let Some(path) = VSCodeVersion::Stable.db_path() {
-            assert!(path.ends_with("Code/User/globalStorage/state.vscdb"));
+            assert!(path.ends_with(".vscode-shared/sharedStorage/state.vscdb"));
         }
         if let Some(path) = VSCodeVersion::Insiders.db_path() {
-            assert!(path.ends_with("Code - Insiders/User/globalStorage/state.vscdb"));
+            assert!(path.ends_with(".vscode-insiders-shared/sharedStorage/state.vscdb"));
         }
         if let Some(path) = VSCodeVersion::Codium.db_path() {
-            assert!(path.ends_with("VSCodium/User/globalStorage/state.vscdb"));
+            assert!(path.ends_with(".vscodium-shared/sharedStorage/state.vscdb"));
         }
     }
 }
