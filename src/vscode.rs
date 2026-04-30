@@ -98,9 +98,18 @@ mod tests {
 
     #[test]
     fn test_from_id_prefix_valid() {
-        assert_eq!(VSCodeVersion::from_id_prefix("stable"), Some(VSCodeVersion::Stable));
-        assert_eq!(VSCodeVersion::from_id_prefix("insiders"), Some(VSCodeVersion::Insiders));
-        assert_eq!(VSCodeVersion::from_id_prefix("codium"), Some(VSCodeVersion::Codium));
+        assert_eq!(
+            VSCodeVersion::from_id_prefix("stable"),
+            Some(VSCodeVersion::Stable)
+        );
+        assert_eq!(
+            VSCodeVersion::from_id_prefix("insiders"),
+            Some(VSCodeVersion::Insiders)
+        );
+        assert_eq!(
+            VSCodeVersion::from_id_prefix("codium"),
+            Some(VSCodeVersion::Codium)
+        );
     }
 
     #[test]

@@ -5,7 +5,7 @@ on:
   workflow_call:
   pull_request:
   push:
-    branches: [main]
+    branches: [ main ]
 
 concurrency:
   group: ci-build-${{ github.ref }}
@@ -27,6 +27,12 @@ jobs:
 
       - name: Run tests
         run: cargo test
+
+      - name: Format check
+        run: cargo fmt -- --check
+
+      - name: Lint
+        run: cargo clippy -- -D warnings
 
       - name: Package
         run: |

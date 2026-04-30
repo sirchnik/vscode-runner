@@ -9,13 +9,14 @@ pub fn get_recent_workspace_paths(db_path: &str) -> Vec<String> {
         return vec![];
     }
 
-    let conn = match Connection::open_with_flags(db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY) {
-        Ok(c) => c,
-        Err(e) => {
-            error!("Unable to open VSCode database file at {db_path}: {e}");
-            return vec![];
-        }
-    };
+    let conn =
+        match Connection::open_with_flags(db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY) {
+            Ok(c) => c,
+            Err(e) => {
+                error!("Unable to open VSCode database file at {db_path}: {e}");
+                return vec![];
+            }
+        };
 
     info!("Opened VSCode database file at {db_path}");
 
@@ -53,14 +54,12 @@ fn parse_recent_paths(json_str: &str) -> Vec<String> {
         .filter_map(|entry| {
             if let Some(uri) = entry.get("folderUri").and_then(|v| v.as_str()) {
                 Some(uri.to_owned())
-            } else if let Some(config_path) = entry
-                .get("workspace")
-                .and_then(|w| w.get("configPath"))
-                .and_then(|v| v.as_str())
-            {
-                Some(config_path.to_owned())
             } else {
-                None
+                entry
+                    .get("workspace")
+                    .and_then(|w| w.get("configPath"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_owned())
             }
         })
         .collect()
@@ -79,10 +78,10 @@ mod tests {
             ]
         }"#;
         let result = parse_recent_paths(json);
-        assert_eq!(result, vec![
-            "file:///home/user/project1",
-            "file:///home/user/project2",
-        ]);
+        assert_eq!(
+            result,
+            vec!["file:///home/user/project1", "file:///home/user/project2",]
+        );
     }
 
     #[test]
@@ -115,10 +114,10 @@ mod tests {
             ]
         }"#;
         let result = parse_recent_paths(json);
-        assert_eq!(result, vec![
-            "file:///home/user/project1",
-            "file:///home/user/project3",
-        ]);
+        assert_eq!(
+            result,
+            vec!["file:///home/user/project1", "file:///home/user/project3",]
+        );
     }
 
     #[test]
@@ -131,11 +130,14 @@ mod tests {
             ]
         }"#;
         let result = parse_recent_paths(json);
-        assert_eq!(result, vec![
-            "file:///home/user/project1",
-            "file:///home/user/my-project/my-project.code-workspace",
-            "file:///home/user/project3",
-        ]);
+        assert_eq!(
+            result,
+            vec![
+                "file:///home/user/project1",
+                "file:///home/user/my-project/my-project.code-workspace",
+                "file:///home/user/project3",
+            ]
+        );
     }
 
     #[test]

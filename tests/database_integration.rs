@@ -7,10 +7,8 @@ fn create_test_db() -> (tempfile::TempDir, String) {
     let db_path = dir.path().join("state.vscdb");
 
     let conn = rusqlite::Connection::open(&db_path).unwrap();
-    conn.execute_batch(
-        "CREATE TABLE ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);",
-    )
-    .unwrap();
+    conn.execute_batch("CREATE TABLE ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);")
+        .unwrap();
     conn.execute(
         "INSERT INTO ItemTable (key, value) VALUES (?1, ?2)",
         rusqlite::params!["history.recentlyOpenedPathsList", TEST_JSON],
@@ -45,10 +43,8 @@ fn skips_entries_without_folder_uri_or_workspace() {
     let json = r#"{"entries":[{"folderUri":"file:///home/user/project1"},{"other":"value"},{"folderUri":"file:///home/user/project2"}]}"#;
 
     let conn = rusqlite::Connection::open(&db_path).unwrap();
-    conn.execute_batch(
-        "CREATE TABLE ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);",
-    )
-    .unwrap();
+    conn.execute_batch("CREATE TABLE ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);")
+        .unwrap();
     conn.execute(
         "INSERT INTO ItemTable (key, value) VALUES (?1, ?2)",
         rusqlite::params!["history.recentlyOpenedPathsList", json],

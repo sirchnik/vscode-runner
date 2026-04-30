@@ -3,6 +3,13 @@
 # Exit script if we encounter an error.
 set -e
 
+kquitapp6 krunner
+
+pids=$(pgrep -x vscode_runner || true)
+if [ -n "$pids" ]; then 
+    kill -TERM $pids || true
+fi
+
 # Unique identifier, ideally a reverse-domain identifier.
 identifier=sirchnik.vscode_runner
 
