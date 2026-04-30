@@ -16,8 +16,8 @@ impl VSCodeVersion {
 
     pub fn icon_name(&self) -> &'static str {
         match self {
-            Self::Stable => "vscode",
-            Self::Insiders => "vscode-insiders",
+            Self::Stable => "visual-studio-code", // com.visualstudio.code.oss for oss
+            Self::Insiders => "visual-studio-code-insiders",
             Self::Codium => "vscodium",
         }
     }
