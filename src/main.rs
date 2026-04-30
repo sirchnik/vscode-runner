@@ -10,8 +10,8 @@ mod vscode;
 
 use vscode::{VSCode, VSCodeVersion};
 
-const SERVICE_NAME: &str = "sirchnik.vscode_runner";
-const OBJECT_PATH: &str = "/vscode_runner";
+const SERVICE_NAME: &str = "sirchnik.vscode_krunner";
+const OBJECT_PATH: &str = "/vscode_krunner";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// Check if an instance of this plugin is already running.
 /// If we don't check KRunner will just launch a new instance every time.
 fn check_if_already_running() {
-    let output = Command::new("pidof").arg("vscode_runner").output();
+    let output = Command::new("pidof").arg("vscode_krunner").output();
 
     match output {
         Ok(result) => {
@@ -40,7 +40,7 @@ fn check_if_already_running() {
             let pids: Vec<&str> = stdout.split_whitespace().collect();
             if pids.len() > 1 {
                 eprintln!(
-                    "An instance of vscode_runner appears to already be running. \
+                    "An instance of vscode_krunner appears to already be running. \
                      Aborting run of new instance."
                 );
                 std::process::exit(0);

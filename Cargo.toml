@@ -1,5 +1,5 @@
 [package]
-name = "vscode_runner"
+name = "vscode_krunner"
 version = "2.0.0"
 edition = "2021"
 description = "KRunner plugin for quickly opening recent VSCode workspaces"

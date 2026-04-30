@@ -28,16 +28,16 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: vscode_runner
+          name: vscode_krunner
           path: artifacts
 
       - name: Rename artifact with version
         run: |
           VERSION=${GITHUB_REF_NAME}
-          mv artifacts/vscode_runner-*.tar.gz artifacts/vscode_runner-${VERSION}.tar.gz
+          mv artifacts/vscode_krunner-*.tar.gz artifacts/vscode_krunner-${VERSION}.tar.gz
 
       - name: Create Draft Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          files: artifacts/vscode_runner-*.tar.gz
+          files: artifacts/vscode_krunner-*.tar.gz

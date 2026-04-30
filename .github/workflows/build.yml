@@ -38,10 +38,10 @@ jobs:
         run: |
           COMMIT=$(git rev-parse --short HEAD)
           ./package.sh
-          mv build/vscode_runner.tar.gz build/vscode_runner-${COMMIT}.tar.gz
+          mv build/vscode_krunner.tar.gz build/vscode_krunner-${COMMIT}.tar.gz
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vscode_runner
-          path: build/vscode_runner-*.tar.gz
+          name: vscode_krunner
+          path: build/vscode_krunner-*.tar.gz

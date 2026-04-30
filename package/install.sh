@@ -5,16 +5,16 @@ set -e
 
 kquitapp6 krunner
 
-pids=$(pgrep -x vscode_runner || true)
+pids=$(pgrep -x vscode_krunner || true)
 if [ -n "$pids" ]; then 
     kill -TERM $pids || true
 fi
 
 # Unique identifier, ideally a reverse-domain identifier.
-identifier=sirchnik.vscode_runner
+identifier=sirchnik.vscode_krunner
 
 # Name of this runner.
-name=vscode_runner
+name=vscode_krunner
 
 # Ensure our working directory is the scripts directory.
 cd "$(dirname "$0")"

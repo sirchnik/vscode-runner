@@ -1,4 +1,4 @@
-use vscode_runner::database::get_recent_workspace_paths;
+use vscode_krunner::database::get_recent_workspace_paths;
 
 const TEST_JSON: &str = r#"{"entries":[{"folderUri":"file:///home/user/Projects/alpha"},{"folderUri":"file:///home/user/Projects/beta"},{"folderUri":"file:///home/user/Projects/gamma"},{"workspace":{"configPath":"/some/workspace.code-workspace"}},{"folderUri":"vscode-remote://ssh-remote%2Bmyserver/home/user/remote-project"}]}"#;
 
