@@ -37,7 +37,7 @@ jobs:
           mv artifacts/vscode_krunner-*.tar.gz artifacts/vscode_krunner-${VERSION}.tar.gz
 
       - name: Create Draft Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: artifacts/vscode_krunner-*.tar.gz
           generate_release_notes: true
