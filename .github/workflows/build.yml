@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -44,7 +44,7 @@ jobs:
           mv build/vscode_krunner.tar.gz build/vscode_krunner-${COMMIT}.tar.gz
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vscode_krunner
           path: build/vscode_krunner-*.tar.gz
