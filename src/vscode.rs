@@ -84,8 +84,11 @@ mod tests {
 
     #[test]
     fn test_icon_names() {
-        assert_eq!(VSCodeVersion::Stable.icon_name(), "vscode");
-        assert_eq!(VSCodeVersion::Insiders.icon_name(), "vscode-insiders");
+        assert_eq!(VSCodeVersion::Stable.icon_name(), "visual-studio-code");
+        assert_eq!(
+            VSCodeVersion::Insiders.icon_name(),
+            "visual-studio-code-insiders"
+        );
         assert_eq!(VSCodeVersion::Codium.icon_name(), "vscodium");
     }
 
