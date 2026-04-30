@@ -1,0 +1,15 @@
+[Desktop Entry]
+Name=VSCode
+Comment=Easily open VSCode recent workspaces
+Type=Service
+X-KDE-ServiceTypes=Plasma/Runner
+Icon=visual-studio-code
+X-KDE-PluginInfo-Author=Niklas Sirch
+X-KDE-PluginInfo-Email=temp@gmail.com
+X-KDE-PluginInfo-Name=vscode_krunner
+X-KDE-PluginInfo-Version=2.0
+X-KDE-PluginInfo-License=GPL
+X-KDE-PluginInfo-EnabledByDefault=true
+X-Plasma-API=DBus
+X-Plasma-DBusRunner-Service=sirchnik.vscode_krunner
+X-Plasma-DBusRunner-Path=/vscode_krunner

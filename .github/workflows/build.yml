@@ -5,7 +5,7 @@ on:
   workflow_call:
   pull_request:
   push:
-    branches: [main]
+    branches: [ main ]
 
 concurrency:
   group: ci-build-${{ github.ref }}
@@ -17,10 +17,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install dependencies
+        run: sudo apt install libdbus-1-dev pkg-config
 
       - name: Build
         run: cargo build --release
@@ -28,14 +31,20 @@ jobs:
       - name: Run tests
         run: cargo test
 
+      - name: Format check
+        run: cargo fmt -- --check
+
+      - name: Lint
+        run: cargo clippy -- -D warnings
+
       - name: Package
         run: |
           COMMIT=$(git rev-parse --short HEAD)
           ./package.sh
-          mv build/vscode_runner.tar.gz build/vscode_runner-${COMMIT}.tar.gz
+          mv build/vscode_krunner.tar.gz build/vscode_krunner-${COMMIT}.tar.gz
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: vscode_runner
-          path: build/vscode_runner-*.tar.gz
+          name: vscode_krunner
+          path: build/vscode_krunner-*.tar.gz

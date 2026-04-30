@@ -11,10 +11,6 @@ A KRunner plugin that lists VSCode's recent workspaces
 
 TODO
 
-## Screenshot
-
-![Screenshot](assets/screenshots/screenshot.png)
-
 
 <br>
 

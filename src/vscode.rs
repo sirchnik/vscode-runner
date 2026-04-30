@@ -16,8 +16,8 @@ impl VSCodeVersion {
 
     pub fn icon_name(&self) -> &'static str {
         match self {
-            Self::Stable => "vscode",
-            Self::Insiders => "vscode-insiders",
+            Self::Stable => "visual-studio-code", // com.visualstudio.code.oss for oss
+            Self::Insiders => "visual-studio-code-insiders",
             Self::Codium => "vscodium",
         }
     }
@@ -84,8 +84,11 @@ mod tests {
 
     #[test]
     fn test_icon_names() {
-        assert_eq!(VSCodeVersion::Stable.icon_name(), "vscode");
-        assert_eq!(VSCodeVersion::Insiders.icon_name(), "vscode-insiders");
+        assert_eq!(VSCodeVersion::Stable.icon_name(), "visual-studio-code");
+        assert_eq!(
+            VSCodeVersion::Insiders.icon_name(),
+            "visual-studio-code-insiders"
+        );
         assert_eq!(VSCodeVersion::Codium.icon_name(), "vscodium");
     }
 
@@ -98,9 +101,18 @@ mod tests {
 
     #[test]
     fn test_from_id_prefix_valid() {
-        assert_eq!(VSCodeVersion::from_id_prefix("stable"), Some(VSCodeVersion::Stable));
-        assert_eq!(VSCodeVersion::from_id_prefix("insiders"), Some(VSCodeVersion::Insiders));
-        assert_eq!(VSCodeVersion::from_id_prefix("codium"), Some(VSCodeVersion::Codium));
+        assert_eq!(
+            VSCodeVersion::from_id_prefix("stable"),
+            Some(VSCodeVersion::Stable)
+        );
+        assert_eq!(
+            VSCodeVersion::from_id_prefix("insiders"),
+            Some(VSCodeVersion::Insiders)
+        );
+        assert_eq!(
+            VSCodeVersion::from_id_prefix("codium"),
+            Some(VSCodeVersion::Codium)
+        );
     }
 
     #[test]

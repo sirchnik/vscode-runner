@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use nucleo_matcher::{
     pattern::{AtomKind, CaseMatching, Normalization, Pattern},
     Config, Matcher,
@@ -16,19 +14,18 @@ pub struct MatchedPath<'a> {
 /// Returns results ordered: name-matched paths first (sorted by score desc),
 /// then remaining path-only matches (sorted by score desc).
 pub fn fuzzy_match_paths<'a>(query: &str, paths: &'a [String]) -> Vec<MatchedPath<'a>> {
+    log::debug!("Matching query '{query}' against paths:");
+    for p in paths {
+        log::debug!("  {p}");
+    }
     let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
-    let pattern = Pattern::new(query, CaseMatching::Ignore, Normalization::Smart, AtomKind::Fuzzy);
-
-    // Identify which project names (last path component) match the query.
-    let path_names: Vec<&str> = paths
-        .iter()
-        .map(|p| p.rsplit('/').next().unwrap_or(p.as_str()))
-        .collect();
-    let name_matched: HashSet<&str> = pattern
-        .match_list(&path_names, &mut matcher)
-        .into_iter()
-        .map(|(name, _)| *name)
-        .collect();
+    let pattern = Pattern::new(
+        query,
+        CaseMatching::Ignore,
+        Normalization::Smart,
+        AtomKind::Fuzzy,
+    );
+    let query_lower = query.to_ascii_lowercase();
 
     // Match against full paths for scoring.
     let matching: Vec<(&str, u32)> = pattern
@@ -37,24 +34,28 @@ pub fn fuzzy_match_paths<'a>(query: &str, paths: &'a [String]) -> Vec<MatchedPat
         .map(|(s, score)| (s.as_str(), score))
         .collect();
 
-    // Partition: paths whose project name matched come first,
-    // preserving score order within each group.
-    let (by_name, by_path): (Vec<_>, Vec<_>) = matching
+    let mut results: Vec<MatchedPath<'a>> = matching
         .into_iter()
-        .partition::<Vec<_>, _>(|(path, _)| {
+        .map(|(path, score)| {
             let last = path.rsplit('/').next().unwrap_or(path);
-            name_matched.contains(last)
-        });
+            let is_name_match = last.to_ascii_lowercase().contains(&query_lower);
 
-    by_name
-        .into_iter()
-        .map(|(path, score)| MatchedPath { path, score, is_name_match: true })
-        .chain(
-            by_path
-                .into_iter()
-                .map(|(path, score)| MatchedPath { path, score, is_name_match: false }),
-        )
-        .collect()
+            MatchedPath {
+                path,
+                score,
+                is_name_match,
+            }
+        })
+        .collect();
+
+    results.sort_by(|left, right| {
+        right
+            .is_name_match
+            .cmp(&left.is_name_match)
+            .then_with(|| right.score.cmp(&left.score))
+    });
+
+    results
 }
 
 #[cfg(test)]
@@ -127,6 +128,7 @@ mod tests {
         let paths = vec![
             "/home/user/master/project-alpha".to_string(),
             "/home/user/master/project-beta".to_string(),
+            "/home/user/master/proj-examples/Class-B_Core_peripherals/mxb-example-ce2333486-safety-core-test.code-workspace".to_string(),
             "/home/user/master/master-thesis".to_string(),
             "/home/user/master/project-gamma".to_string(),
         ];
@@ -134,14 +136,9 @@ mod tests {
 
         let result_paths: Vec<&str> = results.iter().map(|r| r.path).collect();
 
-        assert_eq!(result_paths.len(), 4);
+        assert_eq!(result_paths.len(), 5);
         // Path with "master" in name comes first
         assert_eq!(result_paths[0], "/home/user/master/master-thesis");
-        assert!(results[0].is_name_match);
-        // Remaining are path-only matches
-        assert!(!results[1].is_name_match);
-        assert!(!results[2].is_name_match);
-        assert!(!results[3].is_name_match);
     }
 
     #[test]

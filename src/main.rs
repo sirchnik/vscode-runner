@@ -6,13 +6,12 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 
 mod database;
 mod matching;
-mod notifications;
 mod vscode;
 
 use vscode::{VSCode, VSCodeVersion};
 
-const SERVICE_NAME: &str = "sirchnik.vscode_runner";
-const OBJECT_PATH: &str = "/vscode_runner";
+const SERVICE_NAME: &str = "sirchnik.vscode_krunner";
+const OBJECT_PATH: &str = "/vscode_krunner";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -30,9 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// Check if an instance of this plugin is already running.
 /// If we don't check KRunner will just launch a new instance every time.
 fn check_if_already_running() {
-    let output = Command::new("pidof")
-        .arg("vscode_runner")
-        .output();
+    let output = Command::new("pidof").arg("vscode_krunner").output();
 
     match output {
         Ok(result) => {
@@ -40,10 +37,10 @@ fn check_if_already_running() {
                 return;
             }
             let stdout = String::from_utf8_lossy(&result.stdout);
-            let pids: Vec<&str> = stdout.trim().split_whitespace().collect();
+            let pids: Vec<&str> = stdout.split_whitespace().collect();
             if pids.len() > 1 {
                 eprintln!(
-                    "An instance of vscode_runner appears to already be running. \
+                    "An instance of vscode_krunner appears to already be running. \
                      Aborting run of new instance."
                 );
                 std::process::exit(0);
@@ -104,13 +101,15 @@ impl VscodeRunner {
                     let version = instance.version;
                     info!("Watching database file at {db_path}");
 
-                    let watcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
-                        if let Ok(event) = res {
-                            if event.kind.is_modify() {
-                                info!("Database file changed for {:?}", version);
+                    let watcher = notify::recommended_watcher(
+                        move |res: Result<notify::Event, notify::Error>| {
+                            if let Ok(event) = res {
+                                if event.kind.is_modify() {
+                                    info!("Database file changed for {:?}", version);
+                                }
                             }
-                        }
-                    });
+                        },
+                    );
 
                     if let Ok(mut w) = watcher {
                         let _ = w.watch(&path, RecursiveMode::NonRecursive);
@@ -155,7 +154,11 @@ impl VscodeRunner {
                 let id = format!("{id_prefix}-{}", m.path);
                 let relevance = if max_score > 0.0 {
                     let base = m.score as f64 / max_score;
-                    if m.is_name_match { 0.5 + base * 0.5 } else { base * 0.49 }
+                    if m.is_name_match {
+                        0.5 + base * 0.5
+                    } else {
+                        base * 0.49
+                    }
                 } else {
                     1.0
                 };
@@ -277,7 +280,10 @@ mod tests {
 
     #[test]
     fn test_path_to_uri_strips_file_scheme() {
-        assert_eq!(path_to_uri("file:///home/user/project"), "/home/user/project");
+        assert_eq!(
+            path_to_uri("file:///home/user/project"),
+            "/home/user/project"
+        );
     }
 
     #[test]
@@ -322,4 +328,3 @@ mod tests {
         assert!(!executable_exists("definitely_not_a_real_binary_xyz"));
     }
 }
-

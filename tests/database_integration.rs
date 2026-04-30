@@ -1,4 +1,4 @@
-use vscode_runner::database::get_recent_workspace_paths;
+use vscode_krunner::database::get_recent_workspace_paths;
 
 const TEST_JSON: &str = r#"{"entries":[{"folderUri":"file:///home/user/Projects/alpha"},{"folderUri":"file:///home/user/Projects/beta"},{"folderUri":"file:///home/user/Projects/gamma"},{"workspace":{"configPath":"/some/workspace.code-workspace"}},{"folderUri":"vscode-remote://ssh-remote%2Bmyserver/home/user/remote-project"}]}"#;
 
@@ -7,10 +7,8 @@ fn create_test_db() -> (tempfile::TempDir, String) {
     let db_path = dir.path().join("state.vscdb");
 
     let conn = rusqlite::Connection::open(&db_path).unwrap();
-    conn.execute_batch(
-        "CREATE TABLE ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);",
-    )
-    .unwrap();
+    conn.execute_batch("CREATE TABLE ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);")
+        .unwrap();
     conn.execute(
         "INSERT INTO ItemTable (key, value) VALUES (?1, ?2)",
         rusqlite::params!["history.recentlyOpenedPathsList", TEST_JSON],
@@ -45,10 +43,8 @@ fn skips_entries_without_folder_uri_or_workspace() {
     let json = r#"{"entries":[{"folderUri":"file:///home/user/project1"},{"other":"value"},{"folderUri":"file:///home/user/project2"}]}"#;
 
     let conn = rusqlite::Connection::open(&db_path).unwrap();
-    conn.execute_batch(
-        "CREATE TABLE ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);",
-    )
-    .unwrap();
+    conn.execute_batch("CREATE TABLE ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);")
+        .unwrap();
     conn.execute(
         "INSERT INTO ItemTable (key, value) VALUES (?1, ?2)",
         rusqlite::params!["history.recentlyOpenedPathsList", json],

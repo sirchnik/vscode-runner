@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Unique identifier, ideally a reverse-domain identifier.
-identifier=sirchnik.vscode_runner
+identifier=sirchnik.vscode_krunner
 
 # Name of this runner.
-name=vscode_runner
+name=vscode_krunner
 
 # Stop the runner process.
 kill "$(pidof $name)" &> /dev/null || true

@@ -4,6 +4,6 @@ set -e
 
 ./package.sh
 
-cd build/vscode_runner
+cd build/vscode_krunner
 
 ./install.sh
