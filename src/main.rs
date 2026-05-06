@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use krunner::{Match, MatchIcon, MatchType, RunnerExt};
+use krunner::{Match, RunnerExt};
 use log::{error, info};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 
@@ -132,48 +132,12 @@ impl VscodeRunner {
         };
 
         let recent_paths = instance.recent_workspace_paths();
-        let results = matching::fuzzy_match_paths(query, &recent_paths);
-
-        if results.is_empty() {
-            return vec![];
-        }
-
-        let max_score = results[0].score as f64;
-        let icon_name = version.icon_name();
-        let home_dir = dirs::home_dir()
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_default();
-
-        results
-            .into_iter()
-            .map(|m| {
-                let uri = path_to_uri(m.path);
-                let project_name = m.path.rsplit('/').next().unwrap_or(m.path);
-                let subtitle = parse_relative_path(&uri, &home_dir).unwrap_or(uri);
-                let id_prefix = version.id_prefix();
-                let id = format!("{id_prefix}-{}", m.path);
-                let relevance = if max_score > 0.0 {
-                    let base = m.score as f64 / max_score;
-                    if m.is_name_match {
-                        0.5 + base * 0.5
-                    } else {
-                        base * 0.49
-                    }
-                } else {
-                    1.0
-                };
-
-                Match {
-                    id,
-                    title: project_name.to_owned(),
-                    icon: MatchIcon::ByName(icon_name.to_owned()),
-                    subtitle: Some(subtitle),
-                    ty: MatchType::ExactMatch,
-                    relevance,
-                    ..Match::default()
-                }
-            })
-            .collect()
+        matching::build_krunner_matches(
+            query,
+            &recent_paths,
+            version.icon_name(),
+            version.id_prefix(),
+        )
     }
 }
 
@@ -231,19 +195,6 @@ fn executable_exists(name: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn path_to_uri(path: &str) -> String {
-    path.replace("file://", "").replace("vscode-remote://", "")
-}
-
-fn parse_relative_path(uri: &str, home_dir: &str) -> Option<String> {
-    if !home_dir.is_empty() && uri.contains(home_dir) {
-        let without_home = &uri[home_dir.len()..];
-        Some(format!("~{without_home}"))
-    } else {
-        None
-    }
-}
-
 fn open_workspace(uri: &str, version: VSCodeVersion) {
     let executable = version.executable();
     info!("Opening workspace at {uri} with {executable}");
@@ -263,7 +214,7 @@ fn open_workspace(uri: &str, version: VSCodeVersion) {
 }
 
 fn open_containing_folder(path: &str) {
-    let clean_path = path_to_uri(path);
+    let clean_path = matching::path_to_uri(path);
     info!("Opening containing folder at {clean_path}");
 
     let result = Command::new("xdg-open").arg(&clean_path).spawn();
@@ -277,45 +228,6 @@ fn open_containing_folder(path: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_path_to_uri_strips_file_scheme() {
-        assert_eq!(
-            path_to_uri("file:///home/user/project"),
-            "/home/user/project"
-        );
-    }
-
-    #[test]
-    fn test_path_to_uri_strips_vscode_remote_scheme() {
-        assert_eq!(
-            path_to_uri("vscode-remote:///home/user/project"),
-            "/home/user/project"
-        );
-    }
-
-    #[test]
-    fn test_path_to_uri_plain_path_unchanged() {
-        assert_eq!(path_to_uri("/home/user/project"), "/home/user/project");
-    }
-
-    #[test]
-    fn test_parse_relative_path_with_home_dir() {
-        let result = parse_relative_path("/home/user/projects/foo", "/home/user");
-        assert_eq!(result, Some("~/projects/foo".to_owned()));
-    }
-
-    #[test]
-    fn test_parse_relative_path_without_home_dir() {
-        let result = parse_relative_path("/opt/projects/foo", "/home/user");
-        assert_eq!(result, None);
-    }
-
-    #[test]
-    fn test_parse_relative_path_empty_home_dir() {
-        let result = parse_relative_path("/home/user/projects/foo", "");
-        assert_eq!(result, None);
-    }
 
     #[test]
     fn test_executable_exists_with_known_binary() {
