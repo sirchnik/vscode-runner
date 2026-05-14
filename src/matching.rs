@@ -60,9 +60,10 @@ pub fn fuzzy_match_paths<'a>(query: &str, paths: &'a [String]) -> Vec<MatchedPat
     }
 
     results.sort_by(|left, right| {
-        left.original_index
-            .cmp(&right.original_index) // Lower index (more recent) comes first - PRIMARY FACTOR
-            .then_with(|| right.is_name_match.cmp(&left.is_name_match)) // Then name matches
+        right
+            .is_name_match
+            .cmp(&left.is_name_match) // Name matches come first
+            .then_with(|| left.original_index.cmp(&right.original_index)) // Then lower index (more recent)
             .then_with(|| right.score.cmp(&left.score)) // Then score
     });
 
@@ -268,12 +269,12 @@ mod tests {
         // A recent project (index 0) should rank higher than an older project (index 5)
         // even if the older one has a higher fuzzy match score on the full path.
         let paths = vec![
-            "/home/user/vscode-runner".to_string(), // index 0: name match, but may have lower overall score
-            "/home/user/archived/old-vscrunner-backup".to_string(), // index 1: higher score but older
-            "/home/user/old-projects/vscode-run-test".to_string(),  // index 2
-            "/home/user/very-old/vscode".to_string(),               // index 3
-            "/home/user/ancient/vscrun".to_string(),                // index 4
-            "/home/user/prehistoric/v-s-c-run".to_string(),         // index 5: lowest recency
+            "/home/user/vscode-runner".to_string(), // index 0
+            "/home/user/archived/vscode-runner-backup".to_string(), // index 1
+            "/home/user/old-projects/vscode-run-test".to_string(), // index 2
+            "/home/user/very-old/vscode".to_string(), // index 3
+            "/home/user/ancient/vsc-run".to_string(), // index 4
+            "/home/user/prehistoric/v-s-c-run".to_string(), // index 5
         ];
 
         let results = fuzzy_match_paths("vscrun", &paths);
@@ -357,6 +358,7 @@ mod tests {
             tfm_idx,
             zephyr_idx
         );
+        assert!(results[0].path.contains("master-thesis"));
     }
 
     #[test]
