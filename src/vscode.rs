@@ -3,6 +3,7 @@ pub enum VSCodeVersion {
     Stable,
     Insiders,
     Codium,
+    AntigravityIde,
 }
 
 impl VSCodeVersion {
@@ -11,6 +12,7 @@ impl VSCodeVersion {
             Self::Stable => "code",
             Self::Insiders => "code-insiders",
             Self::Codium => "codium",
+            Self::AntigravityIde => "antigravity-ide",
         }
     }
 
@@ -19,6 +21,7 @@ impl VSCodeVersion {
             Self::Stable => "visual-studio-code", // com.visualstudio.code.oss for oss
             Self::Insiders => "visual-studio-code-insiders",
             Self::Codium => "vscodium",
+            Self::AntigravityIde => "antigravity-ide", // usually antigravity or antigravity-ide
         }
     }
 
@@ -27,6 +30,7 @@ impl VSCodeVersion {
             Self::Stable => "stable",
             Self::Insiders => "insiders",
             Self::Codium => "codium",
+            Self::AntigravityIde => "antigravity",
         }
     }
 
@@ -35,39 +39,75 @@ impl VSCodeVersion {
             "stable" => Some(Self::Stable),
             "insiders" => Some(Self::Insiders),
             "codium" => Some(Self::Codium),
+            "antigravity" => Some(Self::AntigravityIde),
             _ => None,
         }
     }
 
-    pub fn db_path(&self) -> Option<String> {
-        let config_dir = dirs::home_dir()?;
-        let subpath = match self {
-            Self::Stable => ".vscode-shared/sharedStorage/state.vscdb",
-            Self::Insiders => ".vscode-insiders-shared/sharedStorage/state.vscdb",
-            Self::Codium => ".vscodium-shared/sharedStorage/state.vscdb",
-        };
-        Some(config_dir.join(subpath).to_string_lossy().to_string())
+    pub fn db_paths(&self) -> Vec<String> {
+        let mut paths = Vec::new();
+
+        if let Some(config_dir) = dirs::config_dir() {
+            let subpaths_old = match self {
+                Self::Stable => vec!["Code/User/globalStorage/state.vscdb"],
+                Self::Insiders => vec!["Code - Insiders/User/globalStorage/state.vscdb"],
+                Self::Codium => vec!["VSCodium/User/globalStorage/state.vscdb"],
+                Self::AntigravityIde => vec![
+                    "Antigravity/User/globalStorage/state.vscdb",
+                    "Antigravity IDE/User/globalStorage/state.vscdb",
+                ],
+            };
+            for subpath in subpaths_old {
+                paths.push(config_dir.join(subpath).to_string_lossy().to_string());
+            }
+        }
+
+        if let Some(home_dir) = dirs::home_dir() {
+            let subpaths_new = match self {
+                Self::Stable => vec![".vscode-shared/sharedStorage/state.vscdb"],
+                Self::Insiders => vec![".vscode-insiders-shared/sharedStorage/state.vscdb"],
+                Self::Codium => vec![".vscodium-shared/sharedStorage/state.vscdb"],
+                Self::AntigravityIde => vec![
+                    ".antigravity-ide-shared/sharedStorage/state.vscdb",
+                    ".antigravity-shared/sharedStorage/state.vscdb",
+                ],
+            };
+            for subpath in subpaths_new {
+                paths.push(home_dir.join(subpath).to_string_lossy().to_string());
+            }
+        }
+
+        paths
     }
 }
 
 pub struct VSCode {
     pub version: VSCodeVersion,
-    db_path: Option<String>,
+    db_paths: Vec<String>,
 }
 
 impl VSCode {
     pub fn new(version: VSCodeVersion) -> Self {
         Self {
             version,
-            db_path: version.db_path(),
+            db_paths: version.db_paths(),
         }
     }
 
     pub fn recent_workspace_paths(&self) -> Vec<String> {
-        match &self.db_path {
-            Some(path) => crate::database::get_recent_workspace_paths(path),
-            None => vec![],
+        let mut all_paths = Vec::new();
+        for path in &self.db_paths {
+            all_paths.extend(crate::database::get_recent_workspace_paths(path));
         }
+
+        let mut unique_paths = Vec::new();
+        let mut seen = std::collections::HashSet::new();
+        for path in all_paths {
+            if seen.insert(path.clone()) {
+                unique_paths.push(path);
+            }
+        }
+        unique_paths
     }
 }
 
@@ -123,15 +163,36 @@ mod tests {
 
     #[test]
     fn test_db_path_contains_expected_subpath() {
-        // db_path depends on the system config dir, but we can verify the suffix
-        if let Some(path) = VSCodeVersion::Stable.db_path() {
-            assert!(path.ends_with(".vscode-shared/sharedStorage/state.vscdb"));
-        }
-        if let Some(path) = VSCodeVersion::Insiders.db_path() {
-            assert!(path.ends_with(".vscode-insiders-shared/sharedStorage/state.vscdb"));
-        }
-        if let Some(path) = VSCodeVersion::Codium.db_path() {
-            assert!(path.ends_with(".vscodium-shared/sharedStorage/state.vscdb"));
-        }
+        let stable_paths = VSCodeVersion::Stable.db_paths();
+        assert!(stable_paths
+            .iter()
+            .any(|p| p.ends_with(".vscode-shared/sharedStorage/state.vscdb")));
+        assert!(stable_paths
+            .iter()
+            .any(|p| p.ends_with("Code/User/globalStorage/state.vscdb")));
+
+        let insiders_paths = VSCodeVersion::Insiders.db_paths();
+        assert!(insiders_paths
+            .iter()
+            .any(|p| p.ends_with(".vscode-insiders-shared/sharedStorage/state.vscdb")));
+        assert!(insiders_paths
+            .iter()
+            .any(|p| p.ends_with("Code - Insiders/User/globalStorage/state.vscdb")));
+
+        let codium_paths = VSCodeVersion::Codium.db_paths();
+        assert!(codium_paths
+            .iter()
+            .any(|p| p.ends_with(".vscodium-shared/sharedStorage/state.vscdb")));
+        assert!(codium_paths
+            .iter()
+            .any(|p| p.ends_with("VSCodium/User/globalStorage/state.vscdb")));
+
+        let antigravity_paths = VSCodeVersion::AntigravityIde.db_paths();
+        assert!(antigravity_paths
+            .iter()
+            .any(|p| p.ends_with(".antigravity-ide-shared/sharedStorage/state.vscdb")));
+        assert!(antigravity_paths
+            .iter()
+            .any(|p| p.ends_with("Antigravity IDE/User/globalStorage/state.vscdb")));
     }
 }

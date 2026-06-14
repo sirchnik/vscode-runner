@@ -83,6 +83,10 @@ impl VscodeRunner {
             info!("Found VSCodium");
             instances.push(VSCode::new(VSCodeVersion::Codium));
         }
+        if executable_exists("antigravity-ide") {
+            info!("Found Antigravity");
+            instances.push(VSCode::new(VSCodeVersion::AntigravityIde));
+        }
 
         if instances.is_empty() {
             error!(
@@ -95,7 +99,7 @@ impl VscodeRunner {
         // Set up file watchers for each database file so cached paths refresh.
         let mut watchers = Vec::new();
         for instance in &instances {
-            if let Some(db_path) = instance.version.db_path() {
+            for db_path in instance.version.db_paths() {
                 let path = std::path::PathBuf::from(&db_path);
                 if path.exists() {
                     let version = instance.version;
